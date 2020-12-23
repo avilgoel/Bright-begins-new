@@ -124,7 +124,7 @@ function App() {
           </p>
           <br />
           <input type="submit" value="Start Learning!" onClick={onCreate1} />
-          <input type="submit" value="click me" onClick={createPlaceholderEvent("course1")} />
+          <input type="submit" value="click me" onClick={()=>createPlaceholderEvent("course1")} />
           
           {/* <p><button onClick={()=>handleSubmit()}>Submit</button></p> */}
 
