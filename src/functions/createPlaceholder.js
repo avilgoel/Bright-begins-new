@@ -1,4 +1,5 @@
 import firebase from "../firebase";
+import React, {  useState, useEffect} from 'react';
 
 let gapi = window.gapi;
 let CLIENT_ID = "109926755172-6086ap2j9nurhqasd0mtqcs2nnhmu163.apps.googleusercontent.com";
@@ -7,18 +8,260 @@ let DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/calendar/v3/
 let SCOPES = "https://www.googleapis.com/auth/calendar.events";
 
 
-// const createPlaceholderEvent = async function (student) {
+ const createEventMiddle = async function (student) {
+  gapi.load('client:auth2', () => {
+    console.log('loaded client');
 
-//   let events_data;
-//   const fetchData = async () => {
-//     const db = firebase.firestore();
-//     const data = await db.collection("placeholder").get();
-//     events_data= data.docs.map(doc => ({ ...doc.data(), id: doc.id }));
-//   };
-//   fetchData();
+    gapi.client.init({
+      apiKey: API_KEY,
+      clientId: CLIENT_ID,
+      discoveryDocs: DISCOVERY_DOCS,
+      scope: SCOPES,
+    });
+   
+    gapi.client.load('calendar', 'v3', () => {
+      console.log('bam!');
 
 
-//   };
+      gapi.auth2.getAuthInstance().signIn()
+        .then(() => {       
+          let current_date= new Date();    
+ 
+            
+         console.log(current_date);
+          if(current_date.getDay()=== 0 )
+          {
+            current_date.setDate(current_date.getDate() + 1);
+          }
+          
+          let req_days= [];
+
+          if (student.courseBatches[0].batch[0] == 'M') {
+            req_days=[1,3,5];
+          }
+          else {
+            req_days=[2,4,6];
+          }
+
+          let timings = parseInt(student.courseBatches[0].batch.substring(3));
+
+          switch (timings) {
+            case 1530: {
+              current_date.setHours(15);
+              current_date.setMinutes(30);
+              current_date.setSeconds(0);
+
+              break;
+            }
+
+            case 1700: {
+              current_date.setHours(17);
+              current_date.setMinutes(0);
+              current_date.setSeconds(0);
+
+              break;
+            }
+
+            case 1830: {
+              current_date.setHours(18);
+              current_date.setMinutes(30);
+              current_date.setSeconds(0);
+
+              break;
+            }
+
+
+          }
+          
+          console.log(current_date);
+          fetchEventData().then((data) => {
+            let events_data = data; 
+            let loop_date = current_date;
+
+            while( loop_date.getDay() !==0)
+          {
+            console.log("In loop:", loop_date);
+            if(loop_date.getDay()== req_days[0] || loop_date.getDay()== req_days[1] || loop_date.getDay()== req_days[2])
+            {
+              
+              let flag = 0;
+              for (let k = 0; k < parseInt(events_data.length); k++) {
+                let obj1 = events_data[k].event_time.toDate();
+                let obj2 = loop_date;
+
+                let v1 = obj1.getFullYear() == obj2.getFullYear();
+                let v2 = obj1.getDate() == obj2.getDate();
+                let v3 = obj1.getMonth() == obj2.getMonth();
+                let v4 = obj1.getHours() == obj2.getHours();
+                let v5 = obj1.getMinutes() == obj2.getMinutes();
+                let v6 = obj1.getSeconds() == obj2.getSeconds();
+
+
+                if (v1 && v2 && v3 && v4 && v5 && v6) {
+                  flag = 1;
+                                 
+                  console.log("updated");
+                  const db = firebase.firestore();
+                  events_data[k].participants.push({ age: student.age, email: student.BookingEmail });
+                  db.collection('cal_test').doc(events_data[k].id).set(events_data[k]);
+
+                  let event_start = events_data[k].event_time.toDate();
+                  event_start.setHours(event_start.getHours() - 5);
+                  event_start.setMinutes(event_start.getMinutes() - 30);
+                  let event_end = events_data[k].event_time.toDate();
+                  event_end.setHours(event_end.getHours() + 1);
+                  event_end.setHours(event_end.getHours() - 5);
+                  event_end.setMinutes(event_end.getMinutes() - 30);
+
+                  let  part_email_array=[];
+
+                  for(let g=0;g< events_data[k].participants.length; g++)
+                  {
+                    part_email_array[g]={'email' : events_data[k].participants[g].email };
+
+                  }
+
+                  let evobj = {
+                    'summary': events_data[k].event_name,
+                    'description': 'Personality development',
+                    'start': {
+                      'dateTime': event_start.toISOString().substring(0, 19) + "-05:30",
+                      'timeZone': 'Asia/Calcutta'
+                    },
+                    'end': {
+                      'dateTime': event_end.toISOString().substring(0, 19) + "-05:30",
+                      'timeZone': 'Asia/Calcutta'
+                    },
+                    
+                    'attendees': part_email_array
+                 
+                  }
+
+                  
+                  let req = gapi.client.calendar.events.update({
+                    'calendarId': 'primary',
+                    'eventId': events_data[k].calender_id,
+                    'sendUpdates': 'all',
+                    'resource': evobj
+                  });
+
+                  req.execute(function(e) {
+                    console.log(e);
+                });
+
+        
+
+                  break;
+                }
+
+              }
+
+              if (flag == 0) {
+                //bring in teacher logic
+           
+                console.log("created");
+
+                //calendar logic starts
+                let event_start_time = loop_date;
+                event_start_time.setHours(event_start_time.getHours() - 5);
+                event_start_time.setMinutes(event_start_time.getMinutes() - 30);
+                let event_end_time = loop_date;
+                event_end_time.setHours(event_end_time.getHours() + 1);
+                event_end_time.setHours(event_end_time.getHours() - 5);
+                event_end_time.setMinutes(event_end_time.getMinutes() - 30);
+
+                let event_obj = {
+                  'summary': student.courseBatches[0].courseName + " class",
+                  'description': 'Personality development',
+                  'start': {
+                    'dateTime': event_start_time.toISOString().substring(0, 19) + "-05:30",
+                    'timeZone': 'Asia/Calcutta'
+                  },
+                  'end': {
+                    'dateTime': event_end_time.toISOString().substring(0, 19) + "-05:30",
+                    'timeZone': 'Asia/Calcutta'
+                  },
+                  // 'recurrence': [
+                  //   'RRULE:FREQ=DAILY;COUNT=2'
+                  // ],
+                  'attendees': [
+                    { 'email': student.BookingEmail }
+                  ]
+                  // 'reminders': {
+                  //   'useDefault': false,
+                  //   'overrides': [
+                  //     {'method': 'email', 'minutes': 24 * 60},
+                  //     {'method': 'popup', 'minutes': 10}
+                  //   ]
+                  // }
+                }
+
+                let request = gapi.client.calendar.events.insert({
+                  'calendarId': 'primary',
+                  'sendUpdates': 'all',
+                  'resource': event_obj
+
+                })
+
+                request.execute(event_ob => {
+                  console.log(event_ob)
+                  // event_id.push
+                  // window.open(event_ob.htmlLink)
+                  let fcur_date=  new firebase.firestore.Timestamp.fromDate(loop_date);
+                  let createDate = new Date();
+                  let fcreateDate = new firebase.firestore.Timestamp.fromDate(createDate);
+                  const db = firebase.firestore();
+                  const addedObj = {
+                    calender_id: event_ob.id,
+                    course: student.courseBatches[0].courseName,
+                    created_at: fcreateDate,
+                    event_name: student.courseBatches[0].courseName + " class",
+                    event_slot: student.courseBatches[0].batch,
+                    event_time: fcur_date,
+                    participants: [{
+                      age: student.age,
+                      email: student.BookingEmail
+                    }],
+                    teacher_email: []
+  
+                  };
+  
+                  db.collection('cal_test').add(addedObj);
+               
+                })
+
+              
+
+              }
+              
+    
+              
+            }
+
+            loop_date.setDate(loop_date.getDate() +1);
+
+          }
+
+
+          })
+       
+      })
+    })
+
+  // let events_data;
+  // const fetchData = async () => {
+  //   const db = firebase.firestore();
+  //   const data = await db.collection("placeholder").get();
+  //   events_data= data.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+  // };
+  // fetchData();
+
+
+  })
+}
+
+
+
 const calendarfunction = (event) => {
   gapi.load('client:auth2', () => {
     console.log('loaded client');
@@ -165,7 +408,7 @@ const createWeeklyPlaceholder = async (courseName) => {
                 if (parseInt(student.courseBatches[j].NoOfClassesAttended) < parseInt(student.courseBatches[j].NoOfClasses)) {
                   let neededDates = [];
                   let startdate = new Date();
-                  startdate.setFullYear(2020, 11, 27);
+                  // startdate.setFullYear(2020, 11, 27);
         
                   if (student.courseBatches[j].batch[0] == 'M') {
                     startdate.setDate(startdate.getDate() + 1);
@@ -404,4 +647,5 @@ const createWeeklyPlaceholder = async (courseName) => {
 
 }
 
-export default createWeeklyPlaceholder;
+
+export { createEventMiddle, createWeeklyPlaceholder};

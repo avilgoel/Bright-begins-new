@@ -1,7 +1,7 @@
 import React, {  useState, useEffect} from 'react'
 import './App.css';
 import firebase from "./firebase";
-import createPlaceholderEvent from "./functions/createPlaceholder";
+const fns = require("./functions/createPlaceholder");
 
 
 function App() {
@@ -15,8 +15,8 @@ function App() {
   const [pemail, setPemail] = useState("");
   const [bemail, setBemail] = useState("");
   const [age, setAge] = useState("");
-  const [batch, setBatch] = useState("");
-  const [nclasses, setNclasses] = useState(""); 
+  const [batch, setBatch] = useState("MWF1530");
+  const [nclasses, setNclasses] = useState("52"); 
 
   
   useEffect(() => {
@@ -27,7 +27,7 @@ function App() {
     };
     fetchData();
   }, []);
-
+  
   const onCreate1 = () => {
     const db = firebase.firestore();    
     var cancelDate= new Date();
@@ -42,7 +42,8 @@ function App() {
     let fcanceldate= new firebase.firestore.Timestamp.fromDate(cancelDate);
     let fcustomerCancelDate= new firebase.firestore.Timestamp.fromDate(customerCancelDate);
 
-    var student= {
+   
+    let student= {
       BookingEmail: bemail,
       FatherName: fname,
       MotherName: mname,
@@ -66,9 +67,10 @@ function App() {
 
       }] 
     };
-
+    
     db.collection('students').add(student);
-
+    fns.createEventMiddle(student);
+  
     
   }
 
@@ -95,15 +97,16 @@ function App() {
           <div>
           <h1>Paid Customer</h1>
 
-
+          <form onSubmit={(e) => {e.preventDefault(); onCreate1();}}> 
           <p> 
-          <input type="text" name="student_name" placeholder="Student's Name" value={sname} onChange={e => setSname(e.target.value)} /><br /> <br /> 
-          <input type="text" name="father_name" placeholder="Father's Name" value={fname} onChange={e => setFname(e.target.value)} /><br /> <br /> 
-          <input type="text" name="mother_name" placeholder="Mother's Name" value={mname} onChange={e => setMname(e.target.value)} /><br /> <br /> 
-          <input type="number" name="parent_phone" placeholder="Parent's Phone" value={phone} onChange={e => setPhone(e.target.value)} /><br /> <br /> 
-          <input type="email" name="parent_email" placeholder="Parent's Email" value={pemail} onChange={e => setPemail(e.target.value)} /><br /> <br /> 
-          <input type="email" name="booking_email" placeholder="Booking Email" value={bemail} onChange={e => setBemail(e.target.value)} /><br /> <br /> 
-          <input type="number" name="student_age" placeholder="Student's Age" value={age} onChange={e => setAge(e.target.value)} /><br /><br /> 
+                    
+          <input required type="text" name="student_name" placeholder="Student's Name" value={sname} onChange={e => setSname(e.target.value)}  /><br /> <br /> 
+          <input required type="text" name="father_name" placeholder="Father's Name" value={fname} onChange={e => setFname(e.target.value)} /><br /> <br /> 
+          <input required type="text" name="mother_name" placeholder="Mother's Name" value={mname} onChange={e => setMname(e.target.value)} /><br /> <br /> 
+          <input required type="number" name="parent_phone" placeholder="Parent's Phone" value={phone} onChange={e => setPhone(e.target.value)} /><br /> <br /> 
+          <input required type="email" name="parent_email" placeholder="Parent's Email" value={pemail} onChange={e => setPemail(e.target.value)} /><br /> <br /> 
+          <input required type="email" name="booking_email" placeholder="Booking Email" value={bemail} onChange={e => setBemail(e.target.value)} /><br /> <br /> 
+          <input required type="number" name="student_age" placeholder="Student's Age" value={age} onChange={e => setAge(e.target.value)} /><br /><br /> 
 
           <select name="batch" value={batch} onChange={e => setBatch(e.target.value)}>
             <option value="MWF1530">MWF0330</option>
@@ -115,7 +118,7 @@ function App() {
 
           </select>
           <br /><br /> 
-          <select name="number_of_classes" value={nclasses} onChange={e => setNclasses(e.target.value)}>
+          <select name="number_of_classes" value={nclasses} onChange={e => setNclasses(e.target.value)} >
             <option value="52">52</option>
             <option value="13">13</option>
 
@@ -123,8 +126,9 @@ function App() {
 
           </p>
           <br />
-          <input type="submit" value="Start Learning!" onClick={onCreate1} />
-          <input type="submit" value="click me" onClick={()=>createPlaceholderEvent("course1")} />
+          <input type="submit" value="Start Learning!" />          
+          <button onClick={()=> fns.createWeeklyPlaceholder("course1")}>Click me</button>
+          </form>
           
           {/* <p><button onClick={()=>handleSubmit()}>Submit</button></p> */}
 
