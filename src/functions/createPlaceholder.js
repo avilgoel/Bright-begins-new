@@ -8,8 +8,9 @@ let DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/calendar/v3/
 let SCOPES = "https://www.googleapis.com/auth/calendar.events";
 
 
+
  const createEventMiddle = async function (student) {
-  gapi.load('client:auth2', () => {
+  gapi.load('client:auth2', async () => {
     console.log('loaded client');
 
     gapi.client.init({
@@ -24,10 +25,10 @@ let SCOPES = "https://www.googleapis.com/auth/calendar.events";
 
 
       gapi.auth2.getAuthInstance().signIn()
-        .then(() => {       
-          let current_date= new Date();    
+        .then(async () => {       
+          const current_date= new Date();    
  
-            
+    
          console.log(current_date);
           if(current_date.getDay()=== 0 )
           {
@@ -72,22 +73,25 @@ let SCOPES = "https://www.googleapis.com/auth/calendar.events";
 
 
           }
-          
+
           console.log(current_date);
-          fetchEventData().then((data) => {
+          
+
+          fetchEventData().then(async (data) => {
             let events_data = data; 
-            let loop_date = current_date;
+            const loop_date = new Date(current_date);
 
             while( loop_date.getDay() !==0)
           {
-            console.log("In loop:", loop_date);
+           
             if(loop_date.getDay()== req_days[0] || loop_date.getDay()== req_days[1] || loop_date.getDay()== req_days[2])
             {
-              
+              console.log("In loop:", loop_date);
+              const use_later = new Date(loop_date);
               let flag = 0;
               for (let k = 0; k < parseInt(events_data.length); k++) {
-                let obj1 = events_data[k].event_time.toDate();
-                let obj2 = loop_date;
+                const obj1 = new Date(events_data[k].event_time.toDate());
+                const obj2 = new Date(loop_date);
 
                 let v1 = obj1.getFullYear() == obj2.getFullYear();
                 let v2 = obj1.getDate() == obj2.getDate();
@@ -103,17 +107,17 @@ let SCOPES = "https://www.googleapis.com/auth/calendar.events";
                   console.log("updated");
                   const db = firebase.firestore();
                   events_data[k].participants.push({ age: student.age, email: student.BookingEmail });
-                  db.collection('cal_test').doc(events_data[k].id).set(events_data[k]);
+                  await db.collection('cal_test').doc(events_data[k].id).set(events_data[k]);
 
-                  let event_start = events_data[k].event_time.toDate();
+                  const event_start = new Date(events_data[k].event_time.toDate());
                   event_start.setHours(event_start.getHours() - 5);
                   event_start.setMinutes(event_start.getMinutes() - 30);
-                  let event_end = events_data[k].event_time.toDate();
+                  const event_end = new Date(events_data[k].event_time.toDate());
                   event_end.setHours(event_end.getHours() + 1);
                   event_end.setHours(event_end.getHours() - 5);
                   event_end.setMinutes(event_end.getMinutes() - 30);
 
-                  let  part_email_array=[];
+                  let part_email_array=[];
 
                   for(let g=0;g< events_data[k].participants.length; g++)
                   {
@@ -121,7 +125,7 @@ let SCOPES = "https://www.googleapis.com/auth/calendar.events";
 
                   }
 
-                  let evobj = {
+                  const evobj = {
                     'summary': events_data[k].event_name,
                     'description': 'Personality development',
                     'start': {
@@ -133,19 +137,21 @@ let SCOPES = "https://www.googleapis.com/auth/calendar.events";
                       'timeZone': 'Asia/Calcutta'
                     },
                     
-                    'attendees': part_email_array
+                    'attendees': part_email_array,
+                    'guestsCanInviteOthers': false,
+                    'guestsCanSeeOtherGuests': false
                  
                   }
 
                   
-                  let req = gapi.client.calendar.events.update({
+                  const req = gapi.client.calendar.events.update({
                     'calendarId': 'primary',
                     'eventId': events_data[k].calender_id,
                     'sendUpdates': 'all',
                     'resource': evobj
                   });
 
-                  req.execute(function(e) {
+                  await req.execute(function(e) {
                     console.log(e);
                 });
 
@@ -162,15 +168,15 @@ let SCOPES = "https://www.googleapis.com/auth/calendar.events";
                 console.log("created");
 
                 //calendar logic starts
-                let event_start_time = loop_date;
+                const event_start_time = new Date(loop_date);
                 event_start_time.setHours(event_start_time.getHours() - 5);
                 event_start_time.setMinutes(event_start_time.getMinutes() - 30);
-                let event_end_time = loop_date;
+                const event_end_time = new Date(loop_date);
                 event_end_time.setHours(event_end_time.getHours() + 1);
                 event_end_time.setHours(event_end_time.getHours() - 5);
                 event_end_time.setMinutes(event_end_time.getMinutes() - 30);
 
-                let event_obj = {
+                const event_obj = {
                   'summary': student.courseBatches[0].courseName + " class",
                   'description': 'Personality development',
                   'start': {
@@ -186,7 +192,9 @@ let SCOPES = "https://www.googleapis.com/auth/calendar.events";
                   // ],
                   'attendees': [
                     { 'email': student.BookingEmail }
-                  ]
+                  ],
+                  'guestsCanInviteOthers': false,
+                  'guestsCanSeeOtherGuests': false
                   // 'reminders': {
                   //   'useDefault': false,
                   //   'overrides': [
@@ -196,20 +204,21 @@ let SCOPES = "https://www.googleapis.com/auth/calendar.events";
                   // }
                 }
 
-                let request = gapi.client.calendar.events.insert({
+                const request = gapi.client.calendar.events.insert({
                   'calendarId': 'primary',
                   'sendUpdates': 'all',
                   'resource': event_obj
 
                 })
-
-                request.execute(event_ob => {
-                  console.log(event_ob)
+              
+                await request.execute(async event_ob => {
+                  
                   // event_id.push
                   // window.open(event_ob.htmlLink)
-                  let fcur_date=  new firebase.firestore.Timestamp.fromDate(loop_date);
-                  let createDate = new Date();
-                  let fcreateDate = new firebase.firestore.Timestamp.fromDate(createDate);
+                  console.log(use_later);
+                  const fcur_date=  new firebase.firestore.Timestamp.fromDate(use_later);
+                  const createDate = new Date();
+                  const fcreateDate = new firebase.firestore.Timestamp.fromDate(createDate);
                   const db = firebase.firestore();
                   const addedObj = {
                     calender_id: event_ob.id,
@@ -226,7 +235,9 @@ let SCOPES = "https://www.googleapis.com/auth/calendar.events";
   
                   };
   
-                  db.collection('cal_test').add(addedObj);
+                  await db.collection('cal_test').add(addedObj);
+
+                
                
                 })
 
