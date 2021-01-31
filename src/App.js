@@ -1,8 +1,10 @@
 import React, {  useState, useEffect} from 'react'
 import './App.css';
 import firebase from "./firebase";
-const fns = require("./functions/createPlaceholder");
 
+const fn1 = require("./functions/createPlaceholder/createEventMiddle");
+const fn2 = require("./functions/createPlaceholder/createEventWeekly");
+const fn3 = require("./functions/updatePlaceholder/updatePlaceholder");
 
 function App() {
   const [formtype,setFormtype] = useState("paid");
@@ -69,7 +71,7 @@ function App() {
     };
     
     db.collection('students').add(student);
-    fns.createEventMiddle(student);
+    fn1.createEventMiddle(student);
   
     
   }
@@ -88,10 +90,7 @@ function App() {
 
   return (
     <div className="App">      
-      {/* <select value="">
-        <option value="paid" onClick={setFormtype("paid")}>Paid</option>
-        <option value="demo" onClick={setFormtype("demo")}>Demo</option>
-      </select> */}
+     
 
     { (formtype=="paid") ? (
           <div>
@@ -127,10 +126,11 @@ function App() {
           </p>
           <br />
           <input type="submit" value="Start Learning!" />          
-          <button onClick={()=> fns.createWeeklyPlaceholder("course1")}>Click me</button>
-          </form>
+          <button onClick={()=> fn2.createWeeklyPlaceholder("course1")}>Click me</button> 
+          <button onClick={()=> fn3.updatePlaceholder()}>Update placeholder</button>
+                    </form>
           
-          {/* <p><button onClick={()=>handleSubmit()}>Submit</button></p> */}
+
 
           </div>  
     ) : (
@@ -160,7 +160,7 @@ function App() {
       
       <br />
       <input type="submit" value="Start Learning!" onClick={onCreate2}  />
-      {/* <p><button onClick={()=>handleSubmit()}>Submit</button></p> */}
+
     
     </div>  
     )
